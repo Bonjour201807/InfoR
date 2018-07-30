@@ -1,51 +1,51 @@
-import csv
 import jieba
-
+import jieba.posseg as posseg
 
 # 添加用户自定义词典
-jieba.load_userdict('../../data/user_dicts/dicts_food.txt')
+jieba.load_userdict('./data/user_dicts/dict_attraction.txt')
+jieba.load_userdict('./data/user_dicts/dict_food.txt')
+jieba.load_userdict('./data/user_dicts/diming_dict.txt')
+jieba.load_userdict('./data/user_dicts/meishi_dict.txt')
+
 
 class WordSegmentation:
     """ """
     def __init__(self):
         pass
 
-    def read_data(self, file_path):
-
-        if not file_path:
-            raise ValueError('YOU MUST SPECIFY THE FILE PATH!')
-
-        raw_data = []
-        with open(file_path, 'r', encoding='utf8') as f:
-            if f.readline():  # 去掉第一行的 html 标签
-                for line in csv.reader(f):
-                    raw_data.append(line[4].strip())  # ID，datetime，rating，helpful，review
-            else:
-                raise ValueError('empty file: ', file_path)
-        return raw_data
-
-    def segmentation(self, file_path):
+    def seg(self, docs):
         data = []
-        raw_data = self.read_data(file_path)
-        for item in raw_data:
-            data.append([x for x in jieba.cut(item)])  # 使用精确模式
+        for doc in docs:
+            data.append([x for x in jieba.cut(doc)])  # 精确模式
         return data
+
+    def seg_pos(self, docs):
+        data_pos = []
+        for doc in docs:
+            data_pos.append([x for x in posseg.cut(doc)])  # 获取词性
+        return data_pos
 
 
 if __name__ == '__main__':
     import time
     start = time.time()
-    attraction_name = '乐山大佛'
-    file_path = '../../data/data_reviews/' + attraction_name + '.txt'
-    # file_path = '../../data_reviews/bonjour.txt'
-    stopwords_file = '../../data/stopwords/stopwords_marks.txt'
+    # raw_data = ['闻一多为湖北浠水县人，著名爱国人士']
+    raw_data = ['闻一多为湖北浠水县人，著名爱国人士',
+                '我在实高读书的时候去过好几回，不要门票，又近，那时候周末叫上胡季春，涂文涛，余翔，我们几个就一起去里面玩，看看充满文化气息的古物，读读秀丽典雅的古文，也是别有风味。']
     for i in range(1):
         # print(i)
         ws = WordSegmentation()
-        raw_data = ws.read_data(file_path)
-        # print('评论个数: ', len(raw_data))
-        # print(attraction_list)
-        data = ws.segmentation(file_path)
+        data = ws.seg(raw_data)
+        data_pos = ws.seg_pos(raw_data)
 
     print('run time:', time.time() - start)
-    # print(data)
+
+    # with open('./data/data_output/'+attraction_name+'_seg.txt', 'w') as f:
+    #     csv.writer(f).writerows(data)
+    # with open('./data/data_output/'+attraction_name+'_posseg.txt', 'w') as f:
+    #     csv.writer(f).writerows(data_pos)
+    print(data)
+    print(data_pos)
+    print()
+    # for reviews in data_pos:
+    #     print([(x.word, x.flag) for x in reviews])

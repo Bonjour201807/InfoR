@@ -68,54 +68,73 @@ class FreqPhrase:
                 if bfd[words][0] >= self.min_count and \
                         bfd[words][0] / min(wfd[words[0]][0], wfd[words[1]][0]) > self.threshold:
                     dict_candidate[words] = bfd[words]
+
+        dict_finished.update(dict_candidate)
         i = 0
         while len(dict_candidate) > 0:
+            # print('dict_candidate: ', dict_candidate)
             dict_candidate_new = defaultdict(list)
             for word_pair in dict_candidate:
+                # print('for word_pair in dict_candidate:', word_pair)
                 candidate_extend = defaultdict(list)
-                flag = True
+                # flag = True
 
-                for index in dict_candidate[word_pair][1:]:
-                    if index[-1] + 2 <= len(data[index[0]]):
-                        candidate_pair_r = tuple(data[index[0]][index[1]:index[-1] + 2])
-                        pair_index = [index[0]]
-                        pair_index_r = tuple(pair_index+list(range(index[1], index[-1] + 2)))
+                # positions 是一个三元组，记录了word_pair在第几篇文档中，以及在文档中的起始位置和结束位置
+                for positions in dict_candidate[word_pair][1:]:
+                    if positions[-1] + 2 <= len(data[positions[0]]):
+                        candidate_pair_r = tuple(data[positions[0]][positions[1]:positions[-1] + 2])
+                        pair_positions = [positions[0]]
+                        pair_positions_r = tuple(pair_positions+list(range(positions[1], positions[-1] + 2)))
                         if candidate_pair_r[-1] not in self.stoplist:
                             if candidate_pair_r in candidate_extend:
                                 candidate_extend[candidate_pair_r][0] += 1
-                                candidate_extend[candidate_pair_r].append(tuple(pair_index_r))
+                                candidate_extend[candidate_pair_r].append(tuple(pair_positions_r))
                             else:
                                 candidate_extend[candidate_pair_r].append(1)
-                                candidate_extend[candidate_pair_r].append(tuple(pair_index_r))
+                                candidate_extend[candidate_pair_r].append(tuple(pair_positions_r))
                         else:
                             continue
                     else:
                         continue
 
                 for word in candidate_extend:
+                    # print('for word in candidate_extend', word)
                     if candidate_extend[word][0] >= self.min_count and \
                             candidate_extend[word][0] / min(dict_candidate[word_pair][0], wfd[word[-1]][0]) > self.threshold:
-                        flag = False
+                        # flag = False
                         dict_candidate_new[word] = candidate_extend[word]
 
-                if flag:
-                    dict_finished[word_pair] = dict_candidate[word_pair]
+                # if flag:
+                #     dict_finished[word_pair] = dict_candidate[word_pair]
+                #     print('dict_finished', dict_finished)
 
-            if i > 10:
-                # dict_finished = dict(dict_finished.items() + dict_candidate.items())
-                dict_finished.update(dict_candidate)
-                return dict_finished
+            # if i == 1:
+            #     # dict_finished = dict(dict_finished.items() + dict_candidate.items())
+            #     dict_finished.update(dict_candidate)
+            #     return dict_finished
             i += 1
             dict_candidate.clear()
             dict_candidate = dict_candidate_new
+            dict_finished.update(dict_candidate)
         return dict_finished
 
 
 if __name__ == '__main__':
-    fw = FreqPhrase(min_count=10, threshold=0.4)
+    stopwords_file = './data/stopwords/stopwords_marks.txt'
+    fw = FreqPhrase(min_count=1, threshold=0, stopwords_file=stopwords_file)
     data = []  # data 必须是 list 格式，不然 ngrams 返回值为空
-    data = ['abcdeabcdeabcde', 'abcdebcdefabcde', 'abcdecdefgabcde', 'abcdedefghabcde']
-    data = [list(line) for line in data]
+    # data = ['abcdeabcdeabcde', 'abcdebcdefabcde', 'abcdecdefgabcde', 'abcdedefghabcde']
+    # data = [list(line) for line in data]
+    data = [['闻一多', '为', '湖北', '浠水县', '人', '，', '著名', '爱国人士']]
+    # data = [['闻一多', '为', '湖北', '浠水县', '人', '，', '著名', '爱国人士'],
+    #         ['我', '在', '实高', '读书', '的', '时候', '去过', '好几回', '，', '不要', '门票', '，', '又', '近', '，',
+    #          '那', '时候', '周末', '叫', '上', '胡', '季春', '，', '涂文涛', '，', '余翔', '，', '我们', '几个', '就',
+    #          '一起', '去', '里面', '玩', '，', '看看', '充满', '文化', '气息', '的', '古物', '，', '读读', '秀丽', '典雅',
+    #          '的', '古文', '，', '也', '是', '别有风味', '。']]
     print(data)
+    count = 0
     for item in fw.combine2words(data).keys():
+        count += 1
         print('###'.join(item))
+
+    print('频繁子序列的个数：', count)
